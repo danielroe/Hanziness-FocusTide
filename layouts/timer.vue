@@ -14,7 +14,14 @@ const { locale } = useI18n()
 
 useHead(() => {
   return {
-    htmlAttrs: { lang: locale }
+    htmlAttrs: { lang: locale },
+    bodyAttrs: {
+      class: computed(() => settingsStore.visuals.darkMode ? 'dark' : '')
+    },
+    link: [{
+      rel: "manifest",
+      href: "/app_manifest.json"
+    }]
   }
 })
 </script>

@@ -6,31 +6,39 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import VueI18nVitePlugin from '@intlify/unplugin-vue-i18n/vite'
 import StylelintPlugin from 'vite-plugin-stylelint'
-import IconResizer from './modules/build/icon_resize'
-import ServiceWorkerGenerator from './modules/build/pwa'
 import { AppPlatform } from './platforms/platforms'
+import type { IconResizerPluginOptions } from './modules/build/icon_resize'
 
 const packageJson = fs.readFileSync('./package.json').toString()
 const version = JSON.parse(packageJson).version || 0
 
-const iconConfig = {
+const iconConfig: IconResizerPluginOptions = {
   outputFolder: 'icons',
-  sizes: [64, 120, 144, 152, 192, 384, 512],
   variants: [
     {
       src: '/public/icon.png',
       prefix: 'icon-maskable-',
-      purpose: 'maskable'
+      purpose: 'maskable',
+      size: [64, 120, 144, 152, 192, 384, 512],
     },
     {
       src: '/public/icon_monochrome.png',
       prefix: 'icon-monochrome-',
-      purpose: 'monochrome'
+      purpose: 'monochrome',
+      size: [64, 120, 144, 152, 192, 384, 512],
     },
     {
       src: '/public/favicon.png',
       prefix: 'icon-base-',
-      purpose: 'any'
+      purpose: 'any',
+      size: [64, 120, 144, 152, 192, 384, 512],
+    },
+    {
+      src: '/public/icon.png',
+      prefix: 'icon-apple-',
+      purpose: 'any',
+      bgColor: '#fee2e2',
+      size: [192]
     }
   ]
 }
@@ -91,6 +99,7 @@ export default defineNuxtConfig({
     '@/assets/scss/transitions.scss',
     '@/assets/css/disable_tap_highlight.css'
   ],
+
   /*
   ** Plugins to load before mounting the App
   ** https://nuxtjs.org/guide/plugins
@@ -114,7 +123,9 @@ export default defineNuxtConfig({
     // Doc: https://github.com/nuxt-community/eslint-module
     // '@nuxtjs/eslint-module',
     // Doc: https://github.com/nuxt-community/stylelint-module
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    ['./modules/build/icon_resize', iconConfig],
+    ['modules/build/pwa', { swPath: 'serviceworker.js' }]
     // '@nuxtjs/sitemap'
   ],
 
@@ -215,11 +226,19 @@ export default defineNuxtConfig({
     }
   },
 
+  build: {
+    transpile: ['vue-i18n']
+  },
+
   vite: {
     define: {
       // disable Options API support in Vue
       __VUE_OPTIONS_API__: false,
-      __VUE_PROD_DEVTOOLS__: false
+      __VUE_PROD_DEVTOOLS__: false,
+      __VUE_I18N_LEGACY_API__: false,
+      __VUE_I18N_FULL_INSTALL__: false,
+      __INTLIFY_JIT_COMPILATION__: true,
+      __INTLIFY_DROP_MESSAGE_COMPILER__: true
     },
     build: {
       manifest: false,
@@ -228,29 +247,18 @@ export default defineNuxtConfig({
     plugins: [
       StylelintPlugin(),
       VueI18nVitePlugin({
-        // TODO this is needed to make lazy-loading work properly
-        runtimeOnly: false,
+        runtimeOnly: true,
         fullInstall: false,
+        compositionOnly: true,
         dropMessageCompiler: true,
         ssr: true,
         include: [
           resolve(dirname(fileURLToPath(import.meta.url)), './i18n/*.json')
         ]
       }),
-      ServiceWorkerGenerator({ swPath: 'serviceworker.js' }),
-      IconResizer(iconConfig),
-      IconResizer({
-        outputFolder: 'icons',
-        sizes: [192],
-        variants: [
-          {
-            src: '/public/icon.png',
-            prefix: 'icon-apple-',
-            purpose: 'any',
-            bgColor: '#fee2e2'
-          }
-        ]
-      })
+      // ServiceWorkerGenerator({ swPath: 'serviceworker.js' })
     ]
-  }
+  },
+
+  compatibilityDate: '2024-09-14'
 })
